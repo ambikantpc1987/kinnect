@@ -1,0 +1,23 @@
+{
+  "name": "kinnect",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "cucumber-js",
+    "clean": "rimraf allure-results allure-report",
+    "bddgen": "bddgen",
+    "allure:generate": "allure generate ./allure-results --clean",
+    "allure:open": "allure open"
+  },
+  "type": "commonjs",
+  "devDependencies": {
+    "@cucumber/cucumber": "11.0.0",
+    "@playwright/test": "^1.57.0",
+    "@types/node": "^24.10.1",
+    "allure-playwright": "^3.4.3",
+    "playwright-bdd": "^8.4.2",
+    "rimraf": "^6.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
