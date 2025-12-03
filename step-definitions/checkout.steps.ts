@@ -1,46 +1,56 @@
+const { getPage } = require('../hooks/pageFixture.ts');
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-
-import { pageFixture } from '../hooks/pageFixture';
 import { LoginPage } from '../pages/LoginPage';
 import { ProductsPage } from '../pages/ProductsPage';
-import { CartPage } from '../pages/CartPage';
-import { CheckoutPage } from '../pages/CheckoutPage';
-import { ConfirmationPage } from '../pages/ConfirmationPage';
 
 let loginPage: LoginPage;
 let productsPage: ProductsPage;
-let cartPage: CartPage;
-let checkoutPage: CheckoutPage;
-let confirmationPage: ConfirmationPage;
 
-Given('I have 1 item in the cart', async function () {
-  loginPage = new LoginPage(pageFixture.page);
-  productsPage = new ProductsPage(pageFixture.page);
-  cartPage = new CartPage(pageFixture.page);
-  checkoutPage = new CheckoutPage(pageFixture.page);
-  confirmationPage = new ConfirmationPage(pageFixture.page);
+Given('I have {int} item in the cart', async function (count: number) {
+  const page = getPage();
+  loginPage = new LoginPage(page);
+  productsPage = new ProductsPage(page);
 
   await loginPage.open();
   await loginPage.login('standard_user', 'secret_sauce');
 
-  await productsPage.addProductToCart('Sauce Labs Backpack');
-  await cartPage.openCart();
+  const PRODUCT_NAMES = [
+    'Sauce Labs Backpack',
+    'Sauce Labs Bike Light',
+    'Sauce Labs Bolt T-Shirt',
+    'Sauce Labs Fleece Jacket'
+  ];
+
+  for (let i = 0; i < count; i++) {
+    const productName = PRODUCT_NAMES[i];
+    if (!productName) {
+      throw new Error(`No product available at index ${i}. Add more names to PRODUCT_NAMES array.`);
+    }
+    await productsPage.addProductToCart(productName);
+  }
+
+  const badge = await productsPage.getCartCount();
+  if (Number(badge) !== count) {
+    throw new Error(`Expected ${count} items in cart but found ${badge}`);
+  }
 });
 
 When('I proceed to checkout and enter details', async function () {
-  await cartPage.proceedToCheckout();
+  const page = getPage();
 
-  await checkoutPage.enterCheckoutDetails(
-    'John',
-    'Doe',
-    '12345'
-  );
-
-  await checkoutPage.finishOrder();
+  await page.click('.shopping_cart_link');
+  await page.click('button:has-text("Checkout"), input[value="Checkout"]');
+  await page.fill('#first-name', 'John');
+  await page.fill('#last-name', 'Doe');
+  await page.fill('#postal-code', '12345');
+  await page.click('input[type="submit"][value="Continue"], button:has-text("Continue")');
+  await page.click('button:has-text("Finish")');
 });
 
 Then('I should see the order confirmation message', async function () {
-  const msg = await confirmationPage.getConfirmationMessage();
-  expect(msg?.trim()).toContain('THANK YOU FOR YOUR ORDER');
+  const page = getPage();
+
+  const confirmation = page.locator('.complete-header');
+  await expect(confirmation).toHaveText(/THANK YOU/i);
 });

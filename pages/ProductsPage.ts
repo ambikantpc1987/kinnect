@@ -1,19 +1,21 @@
-import { Page } from '@playwright/test';
+import type { Page } from 'playwright';
 
 export class ProductsPage {
-  constructor(private page: Page) {}
+  public readonly page: Page;
 
-  async addProductToCart(productName: string) {
-    // Find the product card by name and click its add-to-cart button
-    const product = this.page.locator('.inventory_item').filter({
-      has: this.page.locator('.inventory_item_name', { hasText: productName })
-    });
-
-    await product.locator('button').click();
+  constructor(page: Page) {
+    this.page = page;
   }
 
-  async getCartCount() {
+  async addProductToCart(productName: string) {
+    const productLocator = this.page.locator('.inventory_item').filter({ hasText: productName });
+    const addBtn = productLocator.locator('button:has-text("Add to cart")');
+    await addBtn.click();
+  }
+
+  async getCartCount(): Promise<string> {
     const badge = this.page.locator('.shopping_cart_badge');
-    return await badge.textContent();
+    if (await badge.count() === 0) return '0';
+    return (await badge.textContent())?.trim() ?? '0';
   }
 }
